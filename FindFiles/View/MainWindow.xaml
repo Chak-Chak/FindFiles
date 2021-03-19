@@ -59,10 +59,10 @@
                     <TextBlock Padding="10, 5, 10 ,5" Width="300" Text="{Binding DirectoryPath}" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 </Border>
                 <Border Margin="5, 7, 5, 7" Style="{StaticResource BorderStyle}">
-                    <Button Width="50" Command="{Binding OpenDirectoryButton}" Style="{StaticResource ButtonStyle}">Обзор</Button>
+                    <Button Width="50" Command="{Binding OpenDirectoryButton}" Style="{StaticResource ButtonStyle}">Path</Button>
                 </Border>
                 <CheckBox Content="Include sub-directions" VerticalAlignment="Center" Margin="20, 5, 0, 5"
-                          IsChecked="{Binding IncludeSubDirections, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsChecked="{Binding IncludeSubDirectories, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           Style="{StaticResource CheckBoxStyle}">
                 </CheckBox>
             </StackPanel>
@@ -81,10 +81,10 @@
             <StackPanel Grid.Row="2" Orientation="Horizontal">
                 <TextBlock Text="Find: " Margin="10, 10, 0, 10" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 <Border Margin="10, 10, 10, 10" Width="500" Height="100" Style="{StaticResource BorderStyle}">
-                    <TextBox Padding="10, 5, 10 ,5" TextWrapping="Wrap" Text="{Binding Find}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
+                    <TextBox Padding="10, 5, 10 ,5" Height="100"  TextWrapping="Wrap" Text="{Binding Find}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
                 </Border>
                 <Border Margin="5, 7, 5, 7" Width="60" Height="40" VerticalAlignment="Bottom" Style="{StaticResource BorderStyle}">
-                    <Button  Command="{Binding FindOnlyButton}" Style="{StaticResource ButtonStyle}">Find only</Button>
+                    <Button  Command="{Binding FindOnlyButton}" Style="{StaticResource ButtonStyle}">Find Only</Button>
                 </Border>
                 <TextBlock Text="IsBusy: " Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 <TextBlock Text="{Binding IsBusy}" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
@@ -94,17 +94,24 @@
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <StackPanel Orientation="Horizontal">
-                <ProgressBar  Width="200"  Height="25" Value="{Binding Progress}"/>
-                <TextBlock Text="Rendered: " Margin="20, 0, 0 ,0" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
-                <Border Margin="10, 10, 10, 10" MinWidth="50" Style="{StaticResource BorderStyle}">
+                <ProgressBar  Width="500"  Height="25" Margin="20, 0, 0, 0" Value="{Binding Progress}"/>
+                <Border Margin="5, 7, 5, 7" Width="60" Height="40" VerticalAlignment="Bottom" Style="{StaticResource BorderStyle}">
+                    <Button  Command="{Binding CancelButton}" Style="{StaticResource ButtonStyle}">Cancel</Button>
+                </Border>
+                <TextBlock Text="Rendered: " Margin="10, 0, 0 ,0" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
+                <Border Margin="5, 10, 0, 10" MinWidth="40" Style="{StaticResource BorderStyle}">
                     <TextBox Padding="10, 5, 10 ,5" Text="{Binding RenderedCountFiles}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
                 </Border>
-                <TextBlock Text="Total: " Margin="10, 0, 0 ,0" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
-                <Border Margin="10, 10, 10, 10" MinWidth="50" Style="{StaticResource BorderStyle}">
+                <TextBlock Text="Total: " Margin="5, 0, 0 ,0" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
+                <Border Margin="5, 10, 0, 10" MinWidth="40" Style="{StaticResource BorderStyle}">
                     <TextBox Padding="10, 5, 10 ,5" Text="{Binding TotalCountFiles}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
                 </Border>
+            </StackPanel>
+            <StackPanel Grid.Row="1">
+                <ItemsControl ItemsSource="{Binding FoundFilesCollection}" Background="White"></ItemsControl>
             </StackPanel>
         </Grid>
     </Grid>

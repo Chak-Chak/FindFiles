@@ -48,55 +48,65 @@ namespace FindFiles.ViewModels
 
         public MainViewModel()
         {
+            DirectoryPath = "C:\\";
             FileMask = "*.*";
             ExcludeFileMask = "*.dll, *.exe";
             //_foundFilesCollection = new ObservableCollection<MainModel>();
-            /*_bwFindFiles = new BackgroundWorker()
+            _bwFindFiles = new BackgroundWorker()
             {
                 WorkerReportsProgress = true,
                 WorkerSupportsCancellation = true
             };
             _bwFindFiles.DoWork += BwFindFilesDoWork;
             _bwFindFiles.ProgressChanged += BwFindFilesProgressChanged;
-            _bwFindFiles.RunWorkerCompleted += BwFindFilesRunWorkerCompleted;*/
+            _bwFindFiles.RunWorkerCompleted += BwFindFilesRunWorkerCompleted;
         }
 
-        private void BwFindFilesProgressChanged(object sender, ProgressChangedEventArgs args)
+        private void BwFindFilesProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            Progress = args.ProgressPercentage;
+            Progress = e.ProgressPercentage;
             //var model = (ReportModel)e.UserState;
             //ProgressMessage = model.Message;
         }
 
-        private void BwFindFilesDoWork(object sender, DoWorkEventArgs args)
+        private void BwFindFilesDoWork(object sender, DoWorkEventArgs e)
         {
-            var vm = args.Argument as MainViewModel;
+            var vm = e.Argument as MainViewModel;
             var bw = (BackgroundWorker) sender;
-            string[] files = Directory.GetDirectories(DirectoryPath);
+            string[] files;
+            if (IncludeSubDirectories) { files = Directory.GetFiles(DirectoryPath, string.IsNullOrWhiteSpace(FileMask) ? "*.*" : FileMask, SearchOption.AllDirectories); }
+            else { files = Directory.GetFiles(DirectoryPath, string.IsNullOrWhiteSpace(FileMask) ? "*.*" : FileMask, SearchOption.TopDirectoryOnly); }
             TotalCountFiles = files.Length;
+            int count = TotalCountFiles;
+            RenderedCountFiles = 0;
 
             var result = 0;
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < count; i++)
             {
-                result += i;
-                Thread.Sleep(TimeSpan.FromMilliseconds(1));
+                if (_bwFindFiles.CancellationPending)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                result = (int)(((float)(i+1)/(float)count)*100);
                 bw.ReportProgress(result);
+                RenderedCountFiles++;
+                Thread.Sleep(1);
             }
-            args.Result = result;
+            e.Result = result;
         }
 
-        private void BwFindFilesRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs args)
+        private void BwFindFilesRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             IsBusy = false;
-            _bwFindFiles.DoWork -= BwFindFilesDoWork;
+            /*_bwFindFiles.DoWork -= BwFindFilesDoWork;
             _bwFindFiles.RunWorkerCompleted -= BwFindFilesRunWorkerCompleted;
-            _bwFindFiles.ProgressChanged -= BwFindFilesProgressChanged;
+            _bwFindFiles.ProgressChanged -= BwFindFilesProgressChanged;*/
             CommandManager.InvalidateRequerySuggested();
         }
 
         private string _directoryPath;
-
         public string DirectoryPath
         {
             get => _directoryPath;
@@ -107,8 +117,20 @@ namespace FindFiles.ViewModels
             }
         }
 
-        private int _progress;
 
+        private bool _includeSubDirectories;
+        public bool IncludeSubDirectories
+        {
+            get => _includeSubDirectories;
+            set
+            {
+                _includeSubDirectories = value;
+                OnPropertyChanged(nameof(IncludeSubDirectories));
+            }
+        }
+
+
+        private int _progress;
         public int Progress
         {
             get => _progress;
@@ -120,8 +142,8 @@ namespace FindFiles.ViewModels
             }
         }
 
-        private bool _isBusy;
 
+        private bool _isBusy;
         public bool IsBusy
         {
             get => _isBusy;
@@ -132,6 +154,7 @@ namespace FindFiles.ViewModels
                 OnPropertyChanged(nameof(IsBusy));
             }
         }
+
 
         private int _renderedCountFiles;
         public int RenderedCountFiles
@@ -144,6 +167,7 @@ namespace FindFiles.ViewModels
             }
         }
 
+
         private int _totalCountFiles;
         public int TotalCountFiles
         {
@@ -154,6 +178,7 @@ namespace FindFiles.ViewModels
                 OnPropertyChanged(nameof(TotalCountFiles));
             }
         }
+
 
         private string _fileMask;
         public string FileMask
@@ -166,8 +191,8 @@ namespace FindFiles.ViewModels
             }
         }
 
-        private string _excludeFileMask;
 
+        private string _excludeFileMask;
         public string ExcludeFileMask
         {
             get => _excludeFileMask;
@@ -178,6 +203,7 @@ namespace FindFiles.ViewModels
             }
         }
 
+
         public ICommand OpenDirectoryButton
         {
             get => new RelayCommand(() =>
@@ -186,20 +212,31 @@ namespace FindFiles.ViewModels
                 dialog.InitialDirectory = "C:\\";
                 dialog.IsFolderPicker = true;
                 if (dialog.ShowDialog() == CommonFileDialogResult.Ok) DirectoryPath = dialog.FileName;
-            }, () => true);
+            }, () => IsBusy == false);
         }
 
         public ICommand FindOnlyButton
         {
             get => new RelayCommand(() =>
             {
-                _bwFindFiles.DoWork += BwFindFilesDoWork;
+                /*_bwFindFiles.DoWork += BwFindFilesDoWork;
                 _bwFindFiles.RunWorkerCompleted += BwFindFilesRunWorkerCompleted;
-                _bwFindFiles.ProgressChanged += BwFindFilesProgressChanged;
+                _bwFindFiles.ProgressChanged += BwFindFilesProgressChanged;*/
                 IsBusy = true;
 
                 _bwFindFiles.RunWorkerAsync(this);
             }, () => IsBusy == false);
+        }
+
+        public ICommand CancelButton
+        {
+            get => new RelayCommand(() =>
+            {
+                if (IsBusy)
+                {
+                    _bwFindFiles.CancelAsync();
+                }
+            }, () => IsBusy);
         }
     }
 }
