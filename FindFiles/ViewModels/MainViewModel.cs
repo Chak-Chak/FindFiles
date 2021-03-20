@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -82,7 +83,12 @@ namespace FindFiles.ViewModels
 
             var result = 0;
 
-            for (int i = 0; i < count; i++)
+            foreach (var item in files)
+            {
+                
+            }
+
+            /*for (int i = 0; i < count; i++)
             {
                 if (_bwFindFiles.CancellationPending)
                 {
@@ -93,7 +99,7 @@ namespace FindFiles.ViewModels
                 bw.ReportProgress(result);
                 RenderedCountFiles++;
                 Thread.Sleep(1);
-            }
+            }*/
             e.Result = result;
         }
 
