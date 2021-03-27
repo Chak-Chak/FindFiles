@@ -28,11 +28,10 @@ namespace ExcludeMaskTest
         public List<string> Exclude(string path, string excludeMask)
         {
             List<string> sortFiles = new List<string>();
-            string[] excludeMaskArr;
             string temp = "";
             string[] masks = excludeMask.Split(new[] {'*', ' ', ',', ':', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
             string[] files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
-            int lenght = files.Length;
+            int lenght = files.Length; //use for debugging
             foreach (string f in files)
             {
                 foreach (string m in masks)

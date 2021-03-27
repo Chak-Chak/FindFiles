@@ -10,34 +10,7 @@
         mc:Ignorable="d"
         Title="FindFiles" Height="600" Width="800">
     <Window.Resources>
-        <Style x:Key="TextBlockForgeStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <Style x:Key="TextBoxForgeStyle" TargetType="TextBox">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="BorderThickness" Value="0"/>
-        </Style>
-
-        <Style x:Key="BorderStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="7"/>
-            <Setter Property="Background" Value="#773587"/>
-        </Style>
-
-        <Style x:Key="ButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-        </Style>
-
-        <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-        </Style>
+        
     </Window.Resources>
     
     <Grid>
@@ -58,7 +31,7 @@
                 <Border Margin="10, 10, 10, 10" Style="{StaticResource BorderStyle}">
                     <TextBlock Padding="10, 5, 10 ,5" Width="300" Text="{Binding DirectoryPath}" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 </Border>
-                <Border Margin="5, 7, 5, 7" Style="{StaticResource BorderStyle}">
+                <Border Height="26" Margin="5, 7, 5, 7" Style="{StaticResource BorderStyle}">
                     <Button Width="50" Command="{Binding OpenDirectoryButton}" Style="{StaticResource ButtonStyle}">Path</Button>
                 </Border>
                 <CheckBox Content="Include sub-directions" VerticalAlignment="Center" Margin="20, 5, 0, 5"
@@ -81,9 +54,9 @@
             <StackPanel Grid.Row="2" Orientation="Horizontal">
                 <TextBlock Text="Find: " Margin="10, 10, 0, 10" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 <Border Margin="10, 10, 10, 10" Width="500" Height="100" Style="{StaticResource BorderStyle}">
-                    <TextBox Padding="10, 5, 10 ,5" Height="100"  TextWrapping="Wrap" Text="{Binding Find}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
+                    <TextBox Padding="10, 5, 10 ,5" Height="100"  TextWrapping="Wrap" Text="{Binding FindText}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
                 </Border>
-                <Border Margin="5, 7, 5, 7" Width="60" Height="40" VerticalAlignment="Bottom" Style="{StaticResource BorderStyle}">
+                <Border Margin="5, 7, 5, 7" Width="60" Height="26" VerticalAlignment="Bottom" Style="{StaticResource BorderStyle}">
                     <Button  Command="{Binding FindOnlyButton}" Style="{StaticResource ButtonStyle}">Find Only</Button>
                 </Border>
                 <TextBlock Text="IsBusy: " Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
@@ -97,9 +70,14 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <StackPanel Orientation="Horizontal">
-                <ProgressBar  Width="500"  Height="25" Margin="20, 0, 0, 0" Value="{Binding Progress}"/>
-                <Border Margin="5, 7, 5, 7" Width="60" Height="40" VerticalAlignment="Bottom" Style="{StaticResource BorderStyle}">
-                    <Button  Command="{Binding CancelButton}" Style="{StaticResource ButtonStyle}">Cancel</Button>
+                <Grid>
+                    <ProgressBar Name="pbStatus" Style="{StaticResource ProgressBarStyle}" Width="500"  Height="25" Margin="20, 0, 0, 0" Value="{Binding Progress}"/>
+                    <TextBlock Foreground="White" Text="{Binding ElementName=pbStatus, Path=Value, StringFormat={}{0:0}%}" 
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center" />
+                </Grid>
+                <Border VerticalAlignment="Center" Margin="7, 7, 5, 7" Width="60" Height="26" Style="{StaticResource BorderStyle}">
+                    <Button Command="{Binding CancelButton}" Style="{StaticResource ButtonStyle}">Cancel</Button>
                 </Border>
                 <TextBlock Text="Rendered: " Margin="10, 0, 0 ,0" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 <Border Margin="5, 10, 0, 10" MinWidth="40" Style="{StaticResource BorderStyle}">
@@ -111,7 +89,17 @@
                 </Border>
             </StackPanel>
             <StackPanel Grid.Row="1">
-                <ItemsControl ItemsSource="{Binding FoundFilesCollection}" Background="White"></ItemsControl>
+                <Border Style="{StaticResource BorderStyle}">
+                    <ListView ItemsSource="{Binding FoundFilesCollection}" Foreground="White" Background="#773587">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Path=FileName}" Width="Auto" >FileName</GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Path=FilePath}" Width="Auto">Path</GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Path=Matches}" Width="Auto">Matches</GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Border>
             </StackPanel>
         </Grid>
     </Grid>

@@ -29,7 +29,6 @@ namespace FindFiles.ViewModels
             WorkerReportsProgress = true,
             WorkerSupportsCancellation = true
         };
-        private ObservableCollection<MainModel> _foundFilesCollection;
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
@@ -37,7 +36,8 @@ namespace FindFiles.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public ObservableCollection<MainModel> FoundFilesCollection
+        private ObservableCollection<DataTable> _foundFilesCollection;
+        public ObservableCollection<DataTable> FoundFilesCollection
         {
             get => _foundFilesCollection;
             set
@@ -52,7 +52,7 @@ namespace FindFiles.ViewModels
             DirectoryPath = "C:\\";
             FileMask = "*.*";
             ExcludeFileMask = "*.dll, *.exe";
-            //_foundFilesCollection = new ObservableCollection<MainModel>();
+             _foundFilesCollection = new ObservableCollection<DataTable>();
             _bwFindFiles = new BackgroundWorker()
             {
                 WorkerReportsProgress = true,
@@ -66,6 +66,7 @@ namespace FindFiles.ViewModels
         private void BwFindFilesProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             Progress = e.ProgressPercentage;
+            if (e.UserState as DataTable != null) FoundFilesCollection.Add(e.UserState as DataTable);
             //var model = (ReportModel)e.UserState;
             //ProgressMessage = model.Message;
         }
@@ -79,27 +80,46 @@ namespace FindFiles.ViewModels
             else { files = Directory.GetFiles(DirectoryPath, string.IsNullOrWhiteSpace(FileMask) ? "*.*" : FileMask, SearchOption.TopDirectoryOnly); }
             TotalCountFiles = files.Length;
             int count = TotalCountFiles;
+            string text = FindText;
             RenderedCountFiles = 0;
+            int matches = 0;
 
             var result = 0;
 
-            foreach (var item in files)
+            /*foreach (var item in files)
             {
-                
-            }
+                foreach (var line in File.ReadLines(item))
+                {
+                    SearchText(line, text);
+                }
+            }*/
 
-            /*for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
+                matches = 0;
                 if (_bwFindFiles.CancellationPending)
                 {
                     e.Cancel = true;
                     return;
                 }
-                result = (int)(((float)(i+1)/(float)count)*100);
-                bw.ReportProgress(result);
+
+                foreach (var line in File.ReadLines(files[i]))
+                {
+                    matches = SearchText(line, text);
+                }
+
+                result = (int)(((float)(i + 1) / (float)count) * 100);
+                if (matches != 0)
+                    bw.ReportProgress(result, new DataTable()
+                    {
+                        FileName = getNameFromPath(files[i]),
+                        FilePath = getPathWithoutName(files[i]),
+                        Matches = matches
+                    });
+                else bw.ReportProgress(result);
                 RenderedCountFiles++;
                 Thread.Sleep(1);
-            }*/
+            }
             e.Result = result;
         }
 
@@ -210,6 +230,18 @@ namespace FindFiles.ViewModels
         }
 
 
+        private string _findText;
+        public string FindText
+        {
+            get => _findText;
+            set
+            {
+                _findText = value;
+                OnPropertyChanged(nameof(FindText));
+            }
+        }
+
+
         public ICommand OpenDirectoryButton
         {
             get => new RelayCommand(() =>
@@ -225,9 +257,7 @@ namespace FindFiles.ViewModels
         {
             get => new RelayCommand(() =>
             {
-                /*_bwFindFiles.DoWork += BwFindFilesDoWork;
-                _bwFindFiles.RunWorkerCompleted += BwFindFilesRunWorkerCompleted;
-                _bwFindFiles.ProgressChanged += BwFindFilesProgressChanged;*/
+                FoundFilesCollection.Clear();
                 IsBusy = true;
 
                 _bwFindFiles.RunWorkerAsync(this);
@@ -243,6 +273,27 @@ namespace FindFiles.ViewModels
                     _bwFindFiles.CancelAsync();
                 }
             }, () => IsBusy);
+        }
+        public class DataTable
+        {
+            public string FileName { get; set; }
+            public string FilePath { get; set; }
+            public int Matches { get; set; }
+        }
+        private int SearchText(string line, string text)
+        {
+            int matches = (line.Length - line.Replace(text, "").Length) / text.Length;
+            return matches;
+        }
+
+        private string getNameFromPath (string path)
+        {
+            return System.IO.Path.GetFileName(path); //get file name
+        }
+
+        private string getPathWithoutName(string path)
+        {
+            return ".\\" + System.IO.Path.GetDirectoryName(path).Remove(0, DirectoryPath.Length); //get path to file
         }
     }
 }
