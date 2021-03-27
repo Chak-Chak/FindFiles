@@ -75,24 +75,15 @@ namespace FindFiles.ViewModels
         {
             var vm = e.Argument as MainViewModel;
             var bw = (BackgroundWorker) sender;
-            string[] files;
-            if (IncludeSubDirectories) { files = Directory.GetFiles(DirectoryPath, string.IsNullOrWhiteSpace(FileMask) ? "*.*" : FileMask, SearchOption.AllDirectories); }
-            else { files = Directory.GetFiles(DirectoryPath, string.IsNullOrWhiteSpace(FileMask) ? "*.*" : FileMask, SearchOption.TopDirectoryOnly); }
-            TotalCountFiles = files.Length;
+            List<string> files = new List<string>();
+            files = SearchFiles(DirectoryPath, FileMask, ExcludeFileMask, IncludeSubDirectories);
+            TotalCountFiles = files.Count;
             int count = TotalCountFiles;
             string text = FindText;
             RenderedCountFiles = 0;
             int matches = 0;
 
             var result = 0;
-
-            /*foreach (var item in files)
-            {
-                foreach (var line in File.ReadLines(item))
-                {
-                    SearchText(line, text);
-                }
-            }*/
 
             for (int i = 0; i < count; i++)
             {
@@ -294,6 +285,26 @@ namespace FindFiles.ViewModels
         private string getPathWithoutName(string path)
         {
             return ".\\" + System.IO.Path.GetDirectoryName(path).Remove(0, DirectoryPath.Length); //get path to file
+        }
+
+        public List<string> SearchFiles(string path, string includeMask, string excludeMask, bool includeSubDirectories)
+        {
+            List<string> sortFiles = new List<string>();
+            string[] masks = excludeMask.Split(new[] { '*', ' ', ',', ':', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] files;
+            if (includeSubDirectories) { files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, SearchOption.AllDirectories); }
+            else { files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, SearchOption.TopDirectoryOnly); }
+            int lenght = files.Length; //use for debugging
+            bool isChecked = true;
+            foreach (string f in files)
+            {
+                foreach (string m in masks)
+                {
+                    if (f.IndexOf(m) != -1) isChecked = false;
+                }
+                if (isChecked) sortFiles.Add(f);
+            }
+            return sortFiles;
         }
     }
 }

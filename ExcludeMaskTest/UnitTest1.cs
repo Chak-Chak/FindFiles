@@ -17,28 +17,31 @@ namespace ExcludeMaskTest
         public void ExcludeMaskTest()
         {
             var excludeFile = new ExcludeFile();
-            string excludeMask = "*.docx, ";
-            List<string> files = excludeFile.Exclude("D:\\test", excludeMask);
+            string excludeMask = "*.docx,,*.dll";
+            string includeMask = "*.*";
+            List<string> files = excludeFile.SearchFiles("D:\\test", includeMask, excludeMask, true);
             files.Count.Equals(4);
         }
     }
 
     public class ExcludeFile
     {
-        public List<string> Exclude(string path, string excludeMask)
+        public List<string> SearchFiles(string path, string includeMask, string excludeMask, bool includeSubDirectories)
         {
             List<string> sortFiles = new List<string>();
-            string temp = "";
-            string[] masks = excludeMask.Split(new[] {'*', ' ', ',', ':', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
-            string[] files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
+            string[] masks = excludeMask.Split(new[] { '*', ' ', ',', ':', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] files;
+            if (includeSubDirectories) { files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, SearchOption.AllDirectories); }
+            else { files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, SearchOption.TopDirectoryOnly); }
             int lenght = files.Length; //use for debugging
+            bool isChecked = true;
             foreach (string f in files)
             {
                 foreach (string m in masks)
                 {
-                    if (f.IndexOf(m) != -1) ;
-                    else sortFiles.Add(f);
+                    if (f.IndexOf(m) != -1) isChecked = false;
                 }
+                if (isChecked) sortFiles.Add(f);
             }
             return sortFiles;
         }
