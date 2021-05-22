@@ -20,8 +20,8 @@ namespace ExcludeMaskTest
             string excludeMask = "*.docx,*.dll";
             string includeMask = "*.*";
             //List<string> files = excludeFile.SearchFiles("D:\\test", includeMask, excludeMask, true);
-            var files = excludeFile.SearchFiles("D:\\test", includeMask, excludeMask, true);
-            files.Count.Equals(4);
+            //var files = excludeFile.SearchFiles("D:\\test", includeMask, excludeMask, true);
+            //files.Count.Equals(4);
         }
     }
 
