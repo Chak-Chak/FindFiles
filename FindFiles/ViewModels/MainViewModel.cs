@@ -293,7 +293,7 @@ namespace FindFiles.ViewModels
                 isFindOnly = false;
 
                 _bwFindFiles.RunWorkerAsync(this);
-            }, () => (IsBusy == false) && (ReplaceText != null));
+            }, () => (IsBusy == false) && (ReplaceText != null) && (FindText != null));
         }
 
         public ICommand FindOnlyButton
