@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Xml.Serialization;
 //using FindFiles.Annotations;
 using FindFiles.Commands;
 using FindFiles.Model;
@@ -24,11 +25,7 @@ namespace FindFiles.ViewModels
 {
     class MainViewModel : INotifyPropertyChanged
     {
-        private BackgroundWorker _bwFindFiles = new BackgroundWorker()
-        {
-            WorkerReportsProgress = true,
-            WorkerSupportsCancellation = true
-        };
+        private BackgroundWorker _bwFindFiles;
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
@@ -46,9 +43,11 @@ namespace FindFiles.ViewModels
                 OnPropertyChanged(nameof(_foundFilesCollection));
             }
         }
+        bool isFindOnly;
 
         public MainViewModel()
         {
+            isFindOnly = false;
             DirectoryPath = "C:\\";
             FileMask = "*.*";
             ExcludeFileMask = "*.dll, *.exe";
@@ -75,51 +74,81 @@ namespace FindFiles.ViewModels
         {
             var vm = e.Argument as MainViewModel;
             var bw = (BackgroundWorker) sender;
-            List<string> files = new List<string>();
-            files = SearchFiles(DirectoryPath, FileMask, ExcludeFileMask, IncludeSubDirectories);
-            TotalCountFiles = files.Count;
+            //List<string> files = new List<string>();
+            var files = SearchFiles(DirectoryPath, FileMask, ExcludeFileMask, IncludeSubDirectories).ToList();
+            TotalCountFiles = files.Count();
             int count = TotalCountFiles;
-            string text = FindText;
+            string findText = FindText;
+            string replaceText = ReplaceText;
             RenderedCountFiles = 0;
             int matches = 0;
 
-            var result = 0;
-
-            for (int i = 0; i < count; i++)
+            int progress = 0;
+            int i = 0;
+            foreach (var file in files)
             {
-                matches = 0;
                 if (_bwFindFiles.CancellationPending)
                 {
+                    isFindOnly = false;
                     e.Cancel = true;
                     return;
                 }
 
-                foreach (var line in File.ReadLines(files[i]))
+                progress = (int)(((double)(i + 1) / (double)count) * 100);
+
+                try
                 {
-                    matches = SearchText(line, text);
+                    string textFile = File.ReadAllText(file);
+                    matches = SearchText(textFile, findText);
+                    if (isFindOnly == false)
+                    {
+                        textFile = textFile.Replace(findText, replaceText);
+                        File.WriteAllText(file, textFile);
+                    }
+                }
+                catch
+                {
+                    matches = 0;
+                    foreach (var line in File.ReadLines(file))
+                    {
+                        if (_bwFindFiles.CancellationPending)
+                        {
+                            isFindOnly = false;
+                            e.Cancel = true;
+                            return;
+                        }
+                        matches += SearchText(line, findText);
+                        if (isFindOnly == false)
+                        {
+                            line.Replace(findText, replaceText);
+                        }
+                    }
                 }
 
-                result = (int)(((float)(i + 1) / (float)count) * 100);
-                if (matches != 0)
-                    bw.ReportProgress(result, new DataTable()
-                    {
-                        FileName = getNameFromPath(files[i]),
-                        FilePath = getPathWithoutName(files[i]),
-                        Matches = matches
-                    });
-                else bw.ReportProgress(result);
+                if (matches == 0)
+                {
+                    i++;
+                    bw.ReportProgress(progress);
+                    RenderedCountFiles++;
+                    continue;
+                }
+                bw.ReportProgress(progress, new DataTable()
+                {
+                    FileName = getNameFromPath(file),
+                    FilePath = getPathWithoutName(file),
+                    Matches = matches
+                });
+                i++;
                 RenderedCountFiles++;
                 Thread.Sleep(1);
             }
-            e.Result = result;
+            e.Result = progress;
         }
 
         private void BwFindFilesRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             IsBusy = false;
-            /*_bwFindFiles.DoWork -= BwFindFilesDoWork;
-            _bwFindFiles.RunWorkerCompleted -= BwFindFilesRunWorkerCompleted;
-            _bwFindFiles.ProgressChanged -= BwFindFilesProgressChanged;*/
+            isFindOnly = false;
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -232,6 +261,17 @@ namespace FindFiles.ViewModels
             }
         }
 
+        private string _replaceText;
+        public string ReplaceText
+        {
+            get => _replaceText;
+            set
+            {
+                _replaceText = value;
+                OnPropertyChanged(nameof(ReplaceText));
+            }
+        }
+
 
         public ICommand OpenDirectoryButton
         {
@@ -244,12 +284,25 @@ namespace FindFiles.ViewModels
             }, () => IsBusy == false);
         }
 
+        public ICommand ReplaceButton
+        {
+            get => new RelayCommand(() =>
+            {
+                FoundFilesCollection.Clear();
+                IsBusy = true;
+                isFindOnly = false;
+
+                _bwFindFiles.RunWorkerAsync(this);
+            }, () => (IsBusy == false) && (ReplaceText != null));
+        }
+
         public ICommand FindOnlyButton
         {
             get => new RelayCommand(() =>
             {
                 FoundFilesCollection.Clear();
                 IsBusy = true;
+                isFindOnly = true;
 
                 _bwFindFiles.RunWorkerAsync(this);
             }, () => IsBusy == false);
@@ -271,9 +324,9 @@ namespace FindFiles.ViewModels
             public string FilePath { get; set; }
             public int Matches { get; set; }
         }
-        private int SearchText(string line, string text)
+        private int SearchText(string text, string findText)
         {
-            int matches = (line.Length - line.Replace(text, "").Length) / text.Length;
+            int matches = (text.Length - text.Replace(findText, "").Length) / findText.Length;
             return matches;
         }
 
@@ -287,23 +340,49 @@ namespace FindFiles.ViewModels
             return ".\\" + System.IO.Path.GetDirectoryName(path).Remove(0, DirectoryPath.Length); //get path to file
         }
 
-        public List<string> SearchFiles(string path, string includeMask, string excludeMask, bool includeSubDirectories)
+        public IEnumerable<string> SearchFiles(string path, string includeMask, string excludeMask, bool includeSubDirectories)
         {
-            List<string> sortFiles = new List<string>();
-            string[] masks = excludeMask.Split(new[] { '*', ' ', ',', ':', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
-            string[] files;
-            if (includeSubDirectories) { files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, SearchOption.AllDirectories); }
-            else { files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, SearchOption.TopDirectoryOnly); }
-            int lenght = files.Length; //use for debugging
+            //List<string> sortFiles = new List<string>();
+            //string[] masks = excludeMask.Split(new[] { '*', ' ', ',', ':', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
+            //var files;
+            var searchOption = includeSubDirectories == true ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            IEnumerable<string> sortFiles;
+            string[] foundFiles = new string[0];
+            string[] excludeFiles = new string[0];
+
+            var allIncludeMasks = includeMask.Replace(" ", "").Split(',');
+            var allExcludeMasks = excludeMask?.Replace(" ", "").Split(',');
+
+            foreach (var include in allIncludeMasks)
+            {
+                foundFiles = foundFiles.Concat(Directory.GetFiles(path, include, searchOption)).ToArray();
+            }
+
+            if (string.IsNullOrWhiteSpace(excludeMask) == false)
+            {
+                foreach (var exclude in allExcludeMasks)
+                {
+                    excludeFiles = excludeFiles.Concat(Directory.GetFiles(path, exclude, searchOption)).ToArray();
+                }
+            }
+
+            sortFiles = string.IsNullOrWhiteSpace(excludeMask) == false
+                ? foundFiles.Except(excludeFiles).AsEnumerable()
+                : foundFiles.AsEnumerable();
+
+            /*if (includeSubDirectories) { var files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, searchOption); }
+            else { files = Directory.GetFiles(path, string.IsNullOrWhiteSpace(includeMask) ? "*.*" : includeMask, searchOption); }*/
+
+            /*int lenght = files.Length; //use for debugging
             bool isChecked = true;
-            foreach (string f in files)
+            foreach (string file in files)
             {
                 foreach (string m in masks)
                 {
-                    if (f.IndexOf(m) != -1) isChecked = false;
+                    if (file.IndexOf(m) != -1) isChecked = false;
                 }
-                if (isChecked) sortFiles.Add(f);
-            }
+                if (isChecked) sortFiles.Add(file);
+            }*/
             return sortFiles;
         }
     }

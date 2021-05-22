@@ -24,6 +24,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Orientation="Horizontal">
@@ -59,8 +60,15 @@
                 <Border Margin="5, 7, 5, 7" Width="60" Height="26" VerticalAlignment="Bottom" Style="{StaticResource BorderStyle}">
                     <Button  Command="{Binding FindOnlyButton}" Style="{StaticResource ButtonStyle}">Find Only</Button>
                 </Border>
-                <TextBlock Text="IsBusy: " Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
-                <TextBlock Text="{Binding IsBusy}" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Orientation="Horizontal">
+                <TextBlock Text="Replace: " Margin="10, 10, 0, 10" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
+                <Border Margin="10, 10, 10, 10" Width="500" Height="100" Style="{StaticResource BorderStyle}">
+                    <TextBox Padding="10, 5, 10 ,5" Height="100"  TextWrapping="Wrap" Text="{Binding ReplaceText}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
+                </Border>
+                <Border Margin="5, 7, 5, 7" Width="60" Height="26" VerticalAlignment="Bottom" Style="{StaticResource BorderStyle}">
+                    <Button  Command="{Binding ReplaceButton}" Style="{StaticResource ButtonStyle}">Replace</Button>
+                </Border>
             </StackPanel>
         </Grid>
 
@@ -81,11 +89,11 @@
                 </Border>
                 <TextBlock Text="Rendered: " Margin="10, 0, 0 ,0" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 <Border Margin="5, 10, 0, 10" MinWidth="40" Style="{StaticResource BorderStyle}">
-                    <TextBox Padding="10, 5, 10 ,5" Text="{Binding RenderedCountFiles}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
+                    <TextBlock Padding="10, 5, 10 ,5" Text="{Binding RenderedCountFiles}" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 </Border>
                 <TextBlock Text="Total: " Margin="5, 0, 0 ,0" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 <Border Margin="5, 10, 0, 10" MinWidth="40" Style="{StaticResource BorderStyle}">
-                    <TextBox Padding="10, 5, 10 ,5" Text="{Binding TotalCountFiles}" Style="{StaticResource TextBoxForgeStyle}"></TextBox>
+                    <TextBlock Padding="10, 5, 10 ,5" Text="{Binding TotalCountFiles}" Style="{StaticResource TextBlockForgeStyle}"></TextBlock>
                 </Border>
             </StackPanel>
             <StackPanel Grid.Row="1">
